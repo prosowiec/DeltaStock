@@ -74,7 +74,7 @@ def unpactUnitsJson(index,jsonDataframe):
     return valuesInTable
 
 
-def unpackCECjson(cik):
+def unpackSECjson(cik):
     scr = APIconnector(f'https://data.sec.gov/api/xbrl/companyfacts/{cik}.json')
     
     jsonRequest = scr.get_request().json()
