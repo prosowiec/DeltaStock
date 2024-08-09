@@ -40,7 +40,8 @@ class APIconnector:
         return soup
     
     def get_request(self):
-        self.response = requests.get(self.URL, headers = self.headers, timeout=1000)
+        if not self.response:
+            self.response = requests.get(self.URL, headers = self.headers, timeout=1000)
         return self.response
 
 
