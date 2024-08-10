@@ -96,5 +96,33 @@ def unpackSECjson(cik):
     
     return mergedDF
 
+
+def get_spy500_formWiki():
+    table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
+    table['CIK'] = table['CIK'].astype(str).apply(lambda x: fillTo10D(x))
+    return table
+
+
+def get_rangeOfDates(yearOffset):
+    now = datetime.now()
+    dateto = int(now.timestamp())
+    dt = timedelta(days=366*yearOffset)
+    datefrom = int((now - dt).timestamp())
+    
+    return dateto, datefrom
+
+def get_StockPrices(ticker, interval = '1d'):
+    end, start = get_rangeOfDates(24)
+    stockPrice = APIconnector(f'https://query2.finance.yahoo.com/v8/finance/chart/{ticker}?period1={start}&period2={end}&interval={interval}')
+    
+    adjClose = stockPrice.get_request().json()['chart']['result'][0]['indicators']['adjclose'][0]['adjclose']
+    timestap = stockPrice.get_request().json()['chart']['result'][0]['timestamp']
+    priceDF = pd.DataFrame({'adjClose':adjClose, 'time':timestap})
+    priceDF['date'] =  pd.to_datetime(priceDF['time'].apply(lambda x: datetime.fromtimestamp(x))).dt.strftime('%Y-%m-%d')
+    priceDF['ticker'] = ticker
+    priceDF.drop('time', inplace=True, axis=1)
+    
+    return priceDF
+
 if __name__=="main":
     pass
