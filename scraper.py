@@ -124,5 +124,36 @@ def get_StockPrices(ticker, interval = '1d'):
     
     return priceDF
 
+def cleaned_companyfacts(jsonDataframe):
+    valuesDF = pd.DataFrame()
+    for index, row in jsonDataframe.iterrows():
+        unit = unpactUnitsJson(index, jsonDataframe)
+        unit['finType'] = jsonDataframe.iloc[index]['finType']
+        valuesDF = pd.concat([unit,valuesDF])
+        
+        
+    mergedDF = jsonDataframe.merge(valuesDF, on='finType')
+    mergedDF.drop(['units'], axis = 1, inplace=True)
+    mergedDF.fillna("null", inplace = True)
+    
+    return mergedDF
+
+def get_companyfacts(cik):
+    if "CIK" not in cik:
+        cik = "CIK" + cik
+    
+    baseUrl = f'https://data.sec.gov/api/xbrl/companyfacts/{cik}.json'
+    scr = APIconnector(baseUrl)
+    jsonRequest = scr.get_request().json()
+    r = jsonRequest['facts']['us-gaap']
+    r = json.dumps(r)
+    jsonDataframe = pd.read_json(r).T
+
+    jsonDataframe.reset_index(inplace=True, names='finType')
+    
+    mergedDF = cleaned_companyfacts(jsonDataframe)
+    
+    return mergedDF
+
 if __name__=="main":
     pass
