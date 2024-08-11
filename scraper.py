@@ -111,8 +111,13 @@ def get_rangeOfDates(yearOffset):
     
     return dateto, datefrom
 
-def get_StockPrices(ticker, interval = '1d'):
-    end, start = get_rangeOfDates(24)
+def get_StockPrices(ticker, interval = '1d', startSelect = None):
+    if startSelect:
+        end, start = get_rangeOfDates(24)
+        start = int(datetime.strptime(startSelect,"%Y-%m-%d").timestamp())
+    else:
+        end, start = get_rangeOfDates(24)
+    
     stockPrice = APIconnector(f'https://query2.finance.yahoo.com/v8/finance/chart/{ticker}?period1={start}&period2={end}&interval={interval}')
     
     adjClose = stockPrice.get_request().json()['chart']['result'][0]['indicators']['adjclose'][0]['adjclose']
@@ -122,7 +127,12 @@ def get_StockPrices(ticker, interval = '1d'):
     priceDF['ticker'] = ticker
     priceDF.drop('time', inplace=True, axis=1)
     
-    return priceDF
+    priceDF["Quarter"] = "Q" + pd.to_datetime(priceDF['date']).dt.quarter.astype(str) + "-" \
+                        + pd.to_datetime(priceDF['date']).dt.year.astype(str)
+    groupByQ = priceDF[["Quarter", "adjClose"]].groupby("Quarter").mean().reset_index().rename(columns={'adjClose': 'meanADJclose'})
+    mergeMean = pd.merge(priceDF, groupByQ, on = 'Quarter')
+
+    return mergeMean
 
 def cleaned_companyfacts(jsonDataframe):
     valuesDF = pd.DataFrame()
@@ -154,6 +164,39 @@ def get_companyfacts(cik):
     mergedDF = cleaned_companyfacts(jsonDataframe)
     
     return mergedDF
+
+def get_CIK_by_Ticker(ticker, filename = 'ticker-SEC.csv',fill0 = True):
+    recentFilings = pd.read_csv(filename)
+    selectedTicker = recentFilings[recentFilings['ticker'] == ticker]
+
+    if not fill0:
+        return str(selectedTicker.cik_str.values[0])
+    
+    return fillTo10D(str(selectedTicker.cik_str.values[0]))
+
+
+
+def get_SEC_filings(ticker):
+    selectedCik = get_CIK_by_Ticker(ticker)
+    reqURL = F'https://data.sec.gov/submissions/CIK{selectedCik}.json'
+    scr = APIconnector(reqURL)
+
+    scr.URL = reqURL
+    res = scr.get_request()
+    JSONresponse = res.json()
+
+    #https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json
+    filings = pd.DataFrame.from_dict(JSONresponse['filings']['recent'])
+
+
+    filings['accessionNumberCLEAN'] = filings['accessionNumber'].apply(lambda x: x.replace('-', ''))
+    filings['fileURL'] = 'https://www.sec.gov/Archives/edgar/data/' + selectedCik + "/" + \
+        filings['accessionNumberCLEAN'] + "/"+ filings['primaryDocument']
+    
+    filings.drop('accessionNumberCLEAN', inplace = True, axis = 1)
+    
+
+    return filings
 
 if __name__=="main":
     pass

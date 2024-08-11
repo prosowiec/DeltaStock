@@ -1,3 +1,4 @@
 delta-spark
 delta
 pyspark
+bs4
