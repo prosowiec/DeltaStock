@@ -20,8 +20,10 @@ def generate_CIK_TICKER(filename = 'ticker-SEC.csv'):
     jsonSEClist = APIconnector('https://www.sec.gov/files/company_tickers.json').get_request()
     recentFilings = pd.DataFrame.from_dict(jsonSEClist.json()).T
     recentFilings['cik10D'] = recentFilings['cik_str'].astype(str).apply(lambda x: fillTo10D(x))
-    recentFilings.to_csv(filename, index=False)
-
+    #recentFilings.to_csv(filename, index=False)
+    
+    return recentFilings
+    
 class APIconnector:
     def __init__(self, URL : str):
         self.URL = URL
