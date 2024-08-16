@@ -2,3 +2,7 @@ delta-spark
 delta
 pyspark
 bs4
+azure-mgmt-resource 
+azure-mgmt-datalake-store
+azure-datalake-store
+load_dotenv
