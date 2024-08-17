@@ -46,6 +46,16 @@ class APIconnector:
             self.response = requests.get(self.URL, headers = self.headers, timeout=1000)
         return self.response
 
+def rename_cols_in_df(df):
+    renameDic = {}
+    for column in df.columns:
+        newName = column.strip().replace(' ', '_').replace('-', '_')
+        renameDic[column] = newName
+        
+    df.rename(columns=renameDic, inplace=True)
+    return df
+
+
 
 def monthWindow(df):    
     daysDiff = df['diffDate']
@@ -102,6 +112,7 @@ def unpackSECjson(cik):
 def get_spy500_formWiki():
     table = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]
     table['CIK'] = table['CIK'].astype(str).apply(lambda x: fillTo10D(x))
+    table = rename_cols_in_df(table)
     return table
 
 

@@ -63,6 +63,14 @@ class sparkDelta():
         if isinstance(data, pd.DataFrame):
             data = self.spark.createDataFrame(data)
         data.write.format("delta").mode(mode).save(f'{self.blobPath}/{tableName}')
+    
+    def save_small_DeltaTable(self, data, tableName, mode = 'overwrite', numFiles = 1):
+        if isinstance(data, pd.DataFrame):
+            data = self.spark.createDataFrame(data)
+        
+        data.repartition(numFiles).write.format("delta").mode(mode)\
+        .option("dataChange", "false").save(f'{self.blobPath}/{tableName}')
+
 
     def readDeltaTable(self, tableName):
         spark_df = self.spark.read.format("delta").load(f'{self.blobPath}/{tableName}')
