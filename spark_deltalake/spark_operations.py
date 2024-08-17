@@ -65,13 +65,14 @@ class sparkDelta():
         data.write.format("delta").mode(mode).save(f'{self.blobPath}/{tableName}')
 
     def readDeltaTable(self, tableName):
-        #data.write.format("delta").save(f'{self.blobPath}/{tableName}')
         spark_df = self.spark.read.format("delta").load(f'{self.blobPath}/{tableName}')
         return spark_df
         
 
     def sparkStop(self):
         self.spark.stop()
-        
+    
+
+
 if __name__=="__main__":
     pass
