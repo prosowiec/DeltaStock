@@ -34,7 +34,7 @@ def append_company_facts(sparkClass : sparkDelta, ticker, cik = None):
 def ingestFact(ticker):
     sparkClass = sparkDelta()
     cik = get_cik_by_ticker(sparkClass, ticker)
-    #append_company_facts(sparkClass, ticker, cik)
+    append_company_facts(sparkClass, ticker, cik)
     append_SEC_filings(sparkClass, ticker, cik)
     
     sparkClass.sparkStop()
@@ -46,5 +46,5 @@ def initialize_spy_ticker_sec():
     spark.sparkStop()
 
 if __name__=="__main__":
-    ingestFact('AAPL')
+    ingestFact('NVDA')
     #initialize_spy_ticker_sec()

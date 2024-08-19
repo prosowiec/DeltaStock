@@ -178,6 +178,13 @@ def get_companyfacts(cik):
     
     mergedDF = mergedDF.apply(lambda x: addDateKey(x, 'end', 'start'), axis=1)
 
+    desired_order = [
+    'finType', 'label', 'description', 'end', 'val', 'accn', 'fy', 'fp', 
+    'form', 'filed', 'frame', 'endFormat', 'start', 'startFormat', 
+    'diffDate', 'monthWindow', 'yearMonthDay'
+]
+
+    mergedDF = mergedDF[desired_order]
     
     return mergedDF
 
@@ -228,6 +235,14 @@ def get_SEC_filings(cik, ticker):
     #filings.fillna('null', inplace=True)
     #filings.replace('', 'null', inplace=True)
     filings['ticker'] = ticker
+    desired_order = [
+    'accessionNumber', 'filingDate', 'reportDate', 'acceptanceDateTime',
+    'act', 'form', 'fileNumber', 'filmNumber', 'items', 'size',
+    'isXBRL', 'isInlineXBRL', 'primaryDocument', 'primaryDocDescription',
+    'fileURL', 'yearMonthDay', 'ticker'
+    ]
+    filings = filings[desired_order]
+    
     
     return filings
 
