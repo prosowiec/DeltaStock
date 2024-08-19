@@ -3,6 +3,8 @@ from delta import configure_spark_with_delta_pip
 import pandas as pd
 from dotenv import load_dotenv
 import os
+import time
+from .sparkschema import schemaSelect
 
 def chceck_hadoop_azure(spark):
     check = 1
@@ -61,15 +63,20 @@ class sparkDelta():
 
     def saveDeltaTable(self, data, tableName, mode = 'overwrite'):
         if isinstance(data, pd.DataFrame):
-            data = self.spark.createDataFrame(data)
+            data = self.spark.createDataFrame(data, schema=schemaSelect[tableName])
         data.write.format("delta").mode(mode).save(f'{self.blobPath}/{tableName}')
     
     def save_small_DeltaTable(self, data, tableName, mode = 'overwrite', numFiles = 1):
         if isinstance(data, pd.DataFrame):
-            data = self.spark.createDataFrame(data)
+            data = self.spark.createDataFrame(data, schema=schemaSelect[tableName])
         
         data.repartition(numFiles).write.format("delta").mode(mode)\
-        .option("dataChange", "false").save(f'{self.blobPath}/{tableName}')
+        .save(f'{self.blobPath}/{tableName}')
+    
+    def save_partition_DeltaTable(self, data, tableName, key, mode = 'append'):
+        if isinstance(data, pd.DataFrame):
+            data = self.spark.createDataFrame(data, schema=schemaSelect[tableName])
+        data.write.format("delta").partitionBy(key).mode(mode).save(f'{self.blobPath}/{tableName}')
 
 
     def readDeltaTable(self, tableName):
@@ -78,8 +85,20 @@ class sparkDelta():
         
 
     def sparkStop(self):
+        time.sleep(2)
         self.spark.stop()
     
+    
+    def get_spark_dataframe(self, filename = 'spy500', createView = False, toDataframe = False):
+        df = self.readDeltaTable(filename)
+        
+        if createView:
+            df.createOrReplaceTempView(filename)
+        
+        if toDataframe:
+            df = df.toPandas()
+        
+        return df
 
 
 if __name__=="__main__":

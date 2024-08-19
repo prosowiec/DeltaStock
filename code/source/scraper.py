@@ -81,7 +81,7 @@ def unpactUnitsJson(index,jsonDataframe):
         valuesInTable['diffDate'] =  (valuesInTable['endFormat'] - valuesInTable['startFormat']).dt.days
         valuesInTable['monthWindow'] = valuesInTable.apply(monthWindow, axis=1)
         
-    valuesInTable['time'] = valuesInTable['endFormat'].dt.year.astype(str).str[2:] + valuesInTable['endFormat'].dt.month.map("{:02}".format)
+    #valuesInTable['time'] = valuesInTable['endFormat'].dt.year.astype(str).str[2:] + valuesInTable['endFormat'].dt.month.map("{:02}".format)
 
     
     return valuesInTable
@@ -157,7 +157,7 @@ def cleaned_companyfacts(jsonDataframe):
         
     mergedDF = jsonDataframe.merge(valuesDF, on='finType')
     mergedDF.drop(['units'], axis = 1, inplace=True)
-    mergedDF.fillna("null", inplace = True)
+    #mergedDF.fillna("null", inplace = True)
     
     return mergedDF
 
@@ -176,9 +176,13 @@ def get_companyfacts(cik):
     
     mergedDF = cleaned_companyfacts(jsonDataframe)
     
+    mergedDF = mergedDF.apply(lambda x: addDateKey(x, 'end', 'start'), axis=1)
+
+    
     return mergedDF
 
-def get_CIK_by_Ticker(ticker, filename = 'ticker-SEC.csv',fill0 = True):
+def get_CIK_by_Ticker(ticker, filename = 'ticker-SEC.csv', fill0 = True):
+    
     recentFilings = pd.read_csv(filename)
     selectedTicker = recentFilings[recentFilings['ticker'] == ticker]
 
@@ -188,10 +192,24 @@ def get_CIK_by_Ticker(ticker, filename = 'ticker-SEC.csv',fill0 = True):
     return fillTo10D(str(selectedTicker.cik_str.values[0]))
 
 
+def addDateKey(row, col1, col2):
 
-def get_SEC_filings(ticker):
-    selectedCik = get_CIK_by_Ticker(ticker)
-    reqURL = F'https://data.sec.gov/submissions/CIK{selectedCik}.json'
+    try:
+        row['yearMonthDay'] = pd.to_datetime(row[col1]).strftime("%Y%m%d")
+    except ValueError:
+        row['yearMonthDay'] = pd.to_datetime(row[col2]).strftime("%Y%m%d")
+    except:
+        row['yearMonthDay'] = ''
+    
+    return row
+
+
+def get_SEC_filings(cik, ticker):
+    if "CIK" not in cik:
+        cik = "CIK" + cik
+
+    clearCik = cik.replace('CIK', '')
+    reqURL = F'https://data.sec.gov/submissions/CIK{clearCik}.json'
     scr = APIconnector(reqURL)
 
     scr.URL = reqURL
@@ -201,14 +219,16 @@ def get_SEC_filings(ticker):
     #https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json
     filings = pd.DataFrame.from_dict(JSONresponse['filings']['recent'])
 
-
     filings['accessionNumberCLEAN'] = filings['accessionNumber'].apply(lambda x: x.replace('-', ''))
-    filings['fileURL'] = 'https://www.sec.gov/Archives/edgar/data/' + selectedCik + "/" + \
+    filings['fileURL'] = 'https://www.sec.gov/Archives/edgar/data/' + clearCik + "/" + \
         filings['accessionNumberCLEAN'] + "/"+ filings['primaryDocument']
     
     filings.drop('accessionNumberCLEAN', inplace = True, axis = 1)
+    filings = filings.apply(lambda x: addDateKey(x, 'reportDate', 'filingDate'), axis=1)
+    #filings.fillna('null', inplace=True)
+    #filings.replace('', 'null', inplace=True)
+    filings['ticker'] = ticker
     
-
     return filings
 
 if __name__=="main":
