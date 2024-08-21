@@ -99,6 +99,31 @@ class sparkDelta():
             df = df.toPandas()
         
         return df
+    
+    
+    def registerMakeDateUDF(self):
+        
+        def formatTime(timestr):    
+            year = timestr[:4]
+            month = timestr[4:6]
+            day = timestr[6:]
+            
+            return '-'.join((year, month, day))
+
+        self.spark.udf.register("formatTime", formatTime)
+    
+    def get_min_max_fillings_date(self, ticker):
+        self.get_spark_dataframe('SEC_filings', True)
+        query = ' '.join(
+            (
+            "WITH CTE AS (SELECT * FROM SEC_filings",
+            f'WHERE ticker = \'{ticker}\')',
+            'SELECT ticker, formatTime(MAX(yearMonthDay)) AS max_time, formatTime(MIN(yearMonthDay)) AS min_time FROM CTE',
+            'GROUP BY ticker'
+            )
+        )
+        self.registerMakeDateUDF()
+        return self.spark.sql(query).toPandas()
 
 
 if __name__=="__main__":
