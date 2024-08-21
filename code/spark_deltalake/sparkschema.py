@@ -7,7 +7,7 @@ fact_schema = StructType([
     StructField("end", StringType(), True),
     StructField("val", DoubleType(), True),
     StructField("accn", StringType(), True),
-    StructField("fy", IntegerType(), True),
+    StructField("fy", StringType(), True),
     StructField("fp", StringType(), True),
     StructField("form", StringType(), True),
     StructField("filed", StringType(), True),
@@ -67,12 +67,19 @@ sec_ticker_schema = StructType([
     StructField("cik10D", StringType(), True)
 ])
 
+prices_schema = StructType([
+    StructField("adjClose", DoubleType(), True),
+    StructField("ticker", StringType(), True),
+    StructField("quarter_meanADJclose", DoubleType(), True),
+    StructField("month_meanADJclose", DoubleType(), True),
+    StructField("yearMonthDay", StringType(), True)
+])
 
 schemaSelect = {
     'company_facts' : fact_schema,
     'SEC_filings' : filing_schema,
     'spy500' : wiki_schema,
-    'prices_schema' : prices_schema,
+    'stock_prices' : prices_schema,
     'ticker-sec' : sec_ticker_schema
 }
 

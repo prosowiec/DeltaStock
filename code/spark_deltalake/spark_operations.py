@@ -85,7 +85,7 @@ class sparkDelta():
         
 
     def sparkStop(self):
-        time.sleep(2)
+        time.sleep(5)
         self.spark.stop()
     
     

@@ -8,6 +8,7 @@ import random
 import time
 from stqdm import stqdm
 import json
+import numpy as np
 
 
 def fillTo10D(cell):
@@ -142,9 +143,17 @@ def get_StockPrices(ticker, interval = '1d', startSelect = None):
     
     priceDF["Quarter"] = "Q" + pd.to_datetime(priceDF['date']).dt.quarter.astype(str) + "-" \
                         + pd.to_datetime(priceDF['date']).dt.year.astype(str)
-    groupByQ = priceDF[["Quarter", "adjClose"]].groupby("Quarter").mean().reset_index().rename(columns={'adjClose': 'meanADJclose'})
+    groupByQ = priceDF[["Quarter", "adjClose"]].groupby("Quarter").mean().reset_index().rename(columns={'adjClose': 'quarter_meanADJclose'})
     mergeMean = pd.merge(priceDF, groupByQ, on = 'Quarter')
+    
+    mergeMean["Month"] = "Month" + pd.to_datetime(mergeMean['date']).dt.month.astype(str) + "-" \
+                        + pd.to_datetime(mergeMean['date']).dt.year.astype(str)
+    groupByQ = mergeMean[["Month", "adjClose"]].groupby("Month").mean().reset_index().rename(columns={'adjClose': 'month_meanADJclose'})
+    mergeMean = pd.merge(mergeMean, groupByQ, on = 'Month')
 
+    mergeMean = mergeMean.apply(lambda x: addDateKey(x, 'date', 'date'), axis=1)
+    mergeMean.drop(['Quarter', 'date', 'Month'], axis=1, inplace=True)
+    
     return mergeMean
 
 def cleaned_companyfacts(jsonDataframe):
@@ -179,10 +188,9 @@ def get_companyfacts(cik):
     mergedDF = mergedDF.apply(lambda x: addDateKey(x, 'end', 'start'), axis=1)
 
     desired_order = [
-    'finType', 'label', 'description', 'end', 'val', 'accn', 'fy', 'fp', 
-    'form', 'filed', 'frame', 'endFormat', 'start', 'startFormat', 
-    'diffDate', 'monthWindow', 'yearMonthDay'
-]
+        'finType', 'label', 'description', 'end', 'val', 'accn', 'fy', 'fp', 
+        'form', 'filed', 'frame', 'endFormat', 'start', 'startFormat', 
+        'diffDate', 'monthWindow', 'yearMonthDay']
 
     mergedDF = mergedDF[desired_order]
     
@@ -232,15 +240,12 @@ def get_SEC_filings(cik, ticker):
     
     filings.drop('accessionNumberCLEAN', inplace = True, axis = 1)
     filings = filings.apply(lambda x: addDateKey(x, 'reportDate', 'filingDate'), axis=1)
-    #filings.fillna('null', inplace=True)
-    #filings.replace('', 'null', inplace=True)
     filings['ticker'] = ticker
     desired_order = [
-    'accessionNumber', 'filingDate', 'reportDate', 'acceptanceDateTime',
-    'act', 'form', 'fileNumber', 'filmNumber', 'items', 'size',
-    'isXBRL', 'isInlineXBRL', 'primaryDocument', 'primaryDocDescription',
-    'fileURL', 'yearMonthDay', 'ticker'
-    ]
+        'accessionNumber', 'filingDate', 'reportDate', 'acceptanceDateTime',
+        'act', 'form', 'fileNumber', 'filmNumber', 'items', 'size',
+        'isXBRL', 'isInlineXBRL', 'primaryDocument', 'primaryDocDescription',
+        'fileURL', 'yearMonthDay', 'ticker']
     filings = filings[desired_order]
     
     
