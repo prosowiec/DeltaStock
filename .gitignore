@@ -6,3 +6,4 @@ secret/
 .env
 __pycache__/
 spark-warehouse/
+__blobstorage__/

@@ -25,7 +25,9 @@ class sparkDelta():
         builder = pyspark.sql.SparkSession.builder.appName("MyApp") \
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
             .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")\
-            .config("spark.jars.packages", "org.apache.hadoop:hadoop-azure:3.3.4,com.microsoft.azure:azure-storage:8.6.6")
+            .config("spark.jars.packages", "org.apache.hadoop:hadoop-azure:3.3.4,com.microsoft.azure:azure-storage:8.6.6")\
+            .config("spark.executor.memory", "12g")\
+            .config("spark.driver.memory", "12g")
             
         # added hadoop-azure:3.3.4,azure-storage:8.6.6,jetty-util:9.4.48.v20220622,jetty-util-ajax:9.4.48.v20220622
         spark = configure_spark_with_delta_pip(builder).getOrCreate()
@@ -106,6 +108,11 @@ class sparkDelta():
         self.registerMakeDateUDF()
         return self.spark.sql(query).toPandas()
 
+    def get_ingested_tickers(self):
+        self.get_spark_dataframe('SEC_filings', True)
+        df = self.spark.sql('SELECT DISTINCT ticker FROM SEC_filings').toPandas()
+        tickers = list(df.values[:,0])
+        return tickers
 
 if __name__=="__main__":
     pass

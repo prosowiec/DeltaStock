@@ -27,19 +27,11 @@ def append_SEC_filings(sparkClass : sparkDelta, ticker, cik = None):
     filings = get_SEC_filings(cik, ticker)
     sparkClass.save_partition_DeltaTable(filings, 'SEC_filings', 'ticker','append')
     
-def append_filings_bookmark_values(sparkClass : sparkDelta,ticker ,filingTableName = 'SEC_filings'):
+def append_filings_bookmark_values(sparkClass : sparkDelta, ticker ,filingTableName = 'SEC_filings'):
     filling = sparkClass.get_spark_dataframe(sparkClass, filingTableName, createView=True)
-    
+    pass    
 
     #sparkClass.save_partition_DeltaTable(prices, 'stock_prices', 'ticker','append')
-
-    
-def append_StockPrices(sparkClass : sparkDelta, ticker, cik = None):
-    if not cik:
-        cik = get_cik_by_ticker(sparkClass, ticker)
-    prices = get_StockPrices(ticker, startSelect='2020-01-01')
-    sparkClass.save_partition_DeltaTable(prices, 'stock_prices', 'ticker','append')
-
     
 
 def append_company_facts(sparkClass : sparkDelta, ticker, cik = None):
@@ -52,13 +44,32 @@ def ingest_Facts_Fillings(sparkClass : sparkDelta, ticker, cik):
     append_company_facts(sparkClass, ticker, cik)
     append_SEC_filings(sparkClass, ticker, cik)
     
-def load_spy500(sparkClass:sparkDelta, max_index = 2):
+    
+def get_ticker_bookmark_values(sparkClass : sparkDelta, ticker):
+    df = sparkClass.get_min_max_fillings_date(ticker)
+    resDic = {'max_time':df['max_time'].values[0], 'min_time': df['min_time'].values[0]}
+    
+    return resDic
+
+def append_StockPrices(sparkClass : sparkDelta, ticker):
+    bookmarDates = get_ticker_bookmark_values(sparkClass, ticker)
+    prices = get_StockPrices(ticker, startSelect=bookmarDates['min_time'], endSelect=bookmarDates['max_time'])
+    sparkClass.save_partition_DeltaTable(prices, 'stock_prices', 'ticker','append')
+
+
+def load_spy500(sparkClass:sparkDelta, max_index = -1):
     ciks = sparkClass.get_spark_dataframe('spy500', toDataframe=True)
     for index, row in tqdm(ciks.iterrows()):
         if index == max_index and max_index >= 0:
             break
+        if index >= 10:
+            ingest_Facts_Fillings(sparkClass, row['Symbol'], row['CIK'])
         
-        ingest_Facts_Fillings(sparkClass, row['Symbol'], row['CIK'])
+    #load stock from ingested tickers    
+    ingestedStock = sparkClass.get_ingested_tickers()
+    for ticker in ingestedStock:
+        append_StockPrices(sparkClass, ticker)
+
 
 def initialize_spy_ticker_sec():
     spark = sparkDelta()
@@ -71,6 +82,7 @@ if __name__=="__main__":
     #initialize_spy_ticker_sec()
     #ingest_Facts_Fillings(sparkClass,'NVDA')
     load_spy500(sparkClass)
+    
     sparkClass.sparkStop()
     #initialize_spy_ticker_sec()
     pass
