@@ -4,6 +4,6 @@ __pycache__/
 *$py.class
 secret/
 .env
-__pycache__/
+__pycache__
 spark-warehouse/
 __blobstorage__/
