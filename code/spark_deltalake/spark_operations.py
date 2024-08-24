@@ -6,7 +6,7 @@ import os
 import time
 from .sparkschema import schemaSelect
 from .checks import chceck_CloudStorageAccount, chceck_hadoop_azure
-
+from .sparkSQL_query import get_sql_merge_facts,get_sql_merge_fillings, get_sql_merge_price
 
 
 
@@ -96,10 +96,11 @@ class sparkDelta():
         self.spark.udf.register("formatTime", formatTime)
     
     def get_min_max_fillings_date(self, ticker):
-        self.get_spark_dataframe('SEC_filings', True)
+        #self.get_spark_dataframe('SEC_filings', True)
+        path = self.blobPath + '/SEC_filings'
         query = ' '.join(
             (
-            "WITH CTE AS (SELECT * FROM SEC_filings",
+            f'WITH CTE AS (SELECT * FROM delta.`{path}`',
             f'WHERE ticker = \'{ticker}\')',
             'SELECT ticker, formatTime(MAX(yearMonthDay)) AS max_time, formatTime(MIN(yearMonthDay)) AS min_time FROM CTE',
             'GROUP BY ticker'
@@ -113,6 +114,36 @@ class sparkDelta():
         df = self.spark.sql('SELECT DISTINCT ticker FROM SEC_filings').toPandas()
         tickers = list(df.values[:,0])
         return tickers
+    
+    def get_sparkDataframe_fromPandas(self, df, schemaName, createView = False, viewName = None):
+        sparkDF = self.spark.createDataFrame(df, schema=schemaSelect[schemaName])
+        if createView:
+            sparkDF.createTempView(viewName)
+        
+        return sparkDF
+
+    def merge_fillings(self, newFillings):
+        self.get_sparkDataframe_fromPandas(newFillings, 'SEC_filings', True, 'filings_updates')
+        path = self.blobPath + '/SEC_filings'
+        pathToSource = f'delta.`{path}`'
+        sql_merge_fillings = get_sql_merge_fillings(pathToSource)
+
+        self.spark.sql(sql_merge_fillings)
+
+
+    def merge_companyFacts(self, newFacts):
+        self.get_sparkDataframe_fromPandas(newFacts, 'company_facts', True, 'company_facts_updates')
+        path = self.blobPath + '/SEC_filings'
+        pathToSource = f'delta.`{path}`'
+        sql_merge_facts = get_sql_merge_facts(pathToSource)
+        self.spark.sql(sql_merge_facts)
+
+    def merge_stockPrce(self, newPrices):
+        self.get_sparkDataframe_fromPandas(newPrices, 'stock_prices', True, 'stock_prices_updates')
+        path = self.blobPath + '/stock_prices'
+        pathToSource = f'delta.`{path}`'
+        sql_merge_facts = get_sql_merge_price(pathToSource)
+        self.spark.sql(sql_merge_facts)
 
 if __name__=="__main__":
     pass

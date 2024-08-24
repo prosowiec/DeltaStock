@@ -27,12 +27,6 @@ def append_SEC_filings(sparkClass : sparkDelta, ticker, cik = None):
     filings = get_SEC_filings(cik, ticker)
     sparkClass.save_partition_DeltaTable(filings, 'SEC_filings', 'ticker','append')
     
-def append_filings_bookmark_values(sparkClass : sparkDelta, ticker ,filingTableName = 'SEC_filings'):
-    filling = sparkClass.get_spark_dataframe(sparkClass, filingTableName, createView=True)
-    pass    
-
-    #sparkClass.save_partition_DeltaTable(prices, 'stock_prices', 'ticker','append')
-    
 
 def append_company_facts(sparkClass : sparkDelta, ticker, cik = None):
     if not cik:
