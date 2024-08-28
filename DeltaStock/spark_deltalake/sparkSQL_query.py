@@ -66,7 +66,7 @@ def get_sql_merge_fillings(pathToSource):
     
     return sql_merge_fillings
     
-    
+#["fy"x, "endFormat"x, "startFormat", "diffDate"]
 def get_sql_merge_facts(pathToSource):
     
     sql_merge_facts = ' '.join((
@@ -81,15 +81,11 @@ def get_sql_merge_facts(pathToSource):
     "    end = company_facts_updates.end,",
     "    val = company_facts_updates.val,",
     "    accn = company_facts_updates.accn,",
-    "    fy = company_facts_updates.fy,",
     "    fp = company_facts_updates.fp,",
     "    form = company_facts_updates.form,",
     "    filed = company_facts_updates.filed,",
     "    frame = company_facts_updates.frame,",
-    "    endFormat = company_facts_updates.endFormat,",
     "    start = company_facts_updates.start,",
-    "    startFormat = company_facts_updates.startFormat,",
-    "    diffDate = company_facts_updates.diffDate,",
     "    monthWindow = company_facts_updates.monthWindow,",
     "    yearMonthDay = company_facts_updates.yearMonthDay",
     "WHEN NOT MATCHED THEN",
@@ -100,15 +96,11 @@ def get_sql_merge_facts(pathToSource):
     "    end,",
     "    val,",
     "    accn,",
-    "    fy,",
     "    fp,",
     "    form,",
     "    filed,",
     "    frame,",
-    "    endFormat,",
     "    start,",
-    "    startFormat,",
-    "    diffDate,",
     "    monthWindow,",
     "    yearMonthDay",
     "  )",
@@ -119,15 +111,11 @@ def get_sql_merge_facts(pathToSource):
     "    company_facts_updates.end,",
     "    company_facts_updates.val,",
     "    company_facts_updates.accn,",
-    "    company_facts_updates.fy,",
     "    company_facts_updates.fp,",
     "    company_facts_updates.form,",
     "    company_facts_updates.filed,",
     "    company_facts_updates.frame,",
-    "    company_facts_updates.endFormat,",
     "    company_facts_updates.start,",
-    "    company_facts_updates.startFormat,",
-    "    company_facts_updates.diffDate,",
     "    company_facts_updates.monthWindow,",
     "    company_facts_updates.yearMonthDay",
     "  );"))

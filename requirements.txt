@@ -8,3 +8,4 @@ azure-datalake-store
 python-dotenv
 tqdm
 numpy
+pandas

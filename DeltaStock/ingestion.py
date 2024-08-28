@@ -3,6 +3,11 @@ from source.scraper import generate_CIK_TICKER, get_spy500_formWiki, \
     fillTo10D, get_SEC_filings, get_companyfacts, get_StockPrices
 from tqdm import tqdm
 import pandas as pd
+from multiprocessing.pool import ThreadPool
+import asyncio
+import time
+import multiprocessing
+import numpy as np
 
 def write_ticker_sec(sparkclass : sparkDelta, filename = 'ticker-sec'):
     sec_ticker = generate_CIK_TICKER()
@@ -37,6 +42,7 @@ def append_company_facts(sparkClass : sparkDelta, ticker, cik = None):
 def ingest_Facts_Fillings(sparkClass : sparkDelta, ticker, cik):
     append_company_facts(sparkClass, ticker, cik)
     append_SEC_filings(sparkClass, ticker, cik)
+    append_StockPrices(sparkClass, ticker)
     
     
 def get_ticker_bookmark_values(sparkClass : sparkDelta, ticker):
@@ -51,32 +57,121 @@ def append_StockPrices(sparkClass : sparkDelta, ticker):
     sparkClass.save_partition_DeltaTable(prices, 'stock_prices', 'ticker','append')
 
 
-def load_spy500(sparkClass:sparkDelta, max_index = -1):
+def load_spy500(sparkClass:sparkDelta, start_index = -1, end_index = 99999):
     ciks = sparkClass.get_spark_dataframe('spy500', toDataframe=True)
     for index, row in tqdm(ciks.iterrows()):
-        if index == max_index and max_index >= 0:
-            break
-        if index >= 10:
+        if index >= start_index and index <= end_index:
             ingest_Facts_Fillings(sparkClass, row['Symbol'], row['CIK'])
         
     #load stock from ingested tickers    
-    ingestedStock = sparkClass.get_ingested_tickers()
-    for ticker in ingestedStock:
-        append_StockPrices(sparkClass, ticker)
+    #ingestedStock = sparkClass.get_ingested_tickers()
+    #for ticker in ingestedStock:
+    #    append_StockPrices(sparkClass, ticker)
 
 
-def initialize_spy_ticker_sec():
+async def async_get_companyfacts(cik):
+    return await asyncio.to_thread(get_companyfacts, cik)
+
+async def async_get_SEC_filings(cik, ticker):
+    return await asyncio.to_thread(get_SEC_filings, cik, ticker)
+
+async def async_get_StockPrices(ticker):
+    return await asyncio.to_thread(get_StockPrices, ticker)
+
+async def get_fact_async(cik, ticker):
+
+    compFacts_th, filings_th = await asyncio.gather(
+        async_get_companyfacts(cik), async_get_SEC_filings(cik, ticker) #, async_get_StockPrices(ticker)
+    )
+
+    resDic = {'SEC_filings':filings_th, 'company_facts':compFacts_th}
+    
+    return resDic
+
+def get_fact_dataframes_dict(cik, ticker):
+    start = time.time()
+    res = asyncio.run(get_fact_async(cik, ticker))
+    
+    print(cik, ticker, 'loaded in', time.time() - start)
+
+    return res
+    
+def get_batch(pool, ticketList, start_step, end_step):
+    ticker = list(ticketList[start_step:end_step,0])
+    ciks = list(ticketList[start_step:end_step,1])
+    batch = pool.starmap(get_fact_dataframes_dict, zip(ciks, ticker))
+    
+    return batch
+
+def save_sec_batch_delta(sparkClass:sparkDelta,wholeDataInBatch):
+    wholeDataInBatch = list(np.array(wholeDataInBatch).flatten())
+    sec_data = unpact_batch_data(wholeDataInBatch)
+    filings, companyfacts = sec_data['SEC_filings'], sec_data['company_facts']
+    sparkClass.save_partition_DeltaTable(filings, 'SEC_filings', 'ticker','append')
+    sparkClass.save_partition_DeltaTable(companyfacts, 'company_facts','accn', 'append')
+
+def unpact_batch_data(wholeDataInBatch):
+    fillings_concat = pd.DataFrame()
+    facts_concat = pd.DataFrame()
+
+    for dic in wholeDataInBatch:
+        fillings_concat = pd.concat([dic['SEC_filings'],fillings_concat ], axis = 0)
+        facts_concat = pd.concat([dic['company_facts'],fillings_concat ], axis = 0)
+    
+    sec_data = {'SEC_filings' : fillings_concat, 'company_facts':facts_concat}
+    
+    return sec_data
+
+
+def get_spy500_batch_sec(sparkClass:sparkDelta, ticketList, batchSize = 16):
+    wholeDataInBatch = []
+    pool = multiprocessing.Pool(batchSize)
+    
+    start_step = 0
+    for end_step in range(batchSize, len(ticketList), batchSize):
+        batch = get_batch(pool, ticketList, start_step, end_step)
+        wholeDataInBatch.append(batch)
+        start_step = end_step
+        save_sec_batch_delta(sparkClass, wholeDataInBatch)
+    
+    if start_step != len(ticketList):
+        batch = get_batch(pool, ticketList, start_step, 4)
+        wholeDataInBatch.append(batch)
+        save_sec_batch_delta(sparkClass, wholeDataInBatch)
+    
+    pool.close()
+    pool.join()
+    
+    wholeDataInBatch = np.array(wholeDataInBatch).flatten()
+    
+    return wholeDataInBatch
+    
+def load_ticket_to_delta(spark: sparkDelta, batchSize = 16, tickers = None):
+    spy500 = spark.get_spark_dataframe(filename='spy500', toDataframe = True)
+    if tickers:
+        spy500 = spy500[spy500['Symbol'].isin(tickers)]
+    
+    spy500 = spy500[['Symbol', 'CIK']].to_numpy()
+    allBatches = get_spy500_batch_sec(spark, spy500, batchSize)
+    return allBatches
+
+
+def initialize_spy_ticker_sec(sparkClass):
     spark = sparkDelta()
     write_spy500(spark)
     write_ticker_sec(spark)
+    load_spy500(sparkClass, 190, 190)
     spark.sparkStop()
 
 if __name__=="__main__":
     sparkClass = sparkDelta()
     #initialize_spy_ticker_sec()
     #ingest_Facts_Fillings(sparkClass,'NVDA')
-    load_spy500(sparkClass)
-    
+    #load_spy500(sparkClass, 190, 190)
+    tickers = ['MMM' , 'AOS', 'ABT']
+    #get_fact_dataframes_dict('CIK0001045810', 'NVDA')
+    #get_spy500_batch_sec(batchSize=3)
+    load_ticket_to_delta(sparkClass, batchSize=16, tickers = tickers)
     sparkClass.sparkStop()
     #initialize_spy_ticker_sec()
     pass

@@ -1,11 +1,6 @@
-import regex as re
 from datetime import datetime, timedelta
 import pandas as pd
-import random
-import time
-from stqdm import stqdm
 import json
-import numpy as np
 from .connector import APIconnector
 
 
@@ -167,6 +162,7 @@ def get_companyfacts(cik):
         'diffDate', 'monthWindow', 'yearMonthDay']
 
     mergedDF = mergedDF[desired_order]
+    mergedDF.drop(["fy", "endFormat", "startFormat", "diffDate"], inplace=True,axis=1)
     
     return mergedDF
 
@@ -182,7 +178,7 @@ def get_CIK_by_Ticker(ticker, filename = 'ticker-SEC.csv', fill0 = True):
 
 
 def addDateKey(row, col1, col2):
-
+    pd.options.mode.copy_on_write = True
     try:
         row['yearMonthDay'] = pd.to_datetime(row[col1]).strftime("%Y%m%d")
     except ValueError:

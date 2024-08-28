@@ -7,15 +7,15 @@ fact_schema = StructType([
     StructField("end", StringType(), True),
     StructField("val", DoubleType(), True),
     StructField("accn", StringType(), True),
-    StructField("fy", StringType(), True),
+    #StructField("fy", StringType(), True), ["fy", "endFormat", "startFormat", "diffDate"]
     StructField("fp", StringType(), True),
     StructField("form", StringType(), True),
     StructField("filed", StringType(), True),
     StructField("frame", StringType(), True),
-    StructField("endFormat", StringType(), True),
+    #StructField("endFormat", StringType(), True),
     StructField("start", StringType(), True),
-    StructField("startFormat", StringType(), True),
-    StructField("diffDate", StringType(), True),
+    #StructField("startFormat", StringType(), True),
+    #StructField("diffDate", StringType(), True),
     StructField("monthWindow", StringType(), True),
     StructField("yearMonthDay", StringType(), True)
 ])
