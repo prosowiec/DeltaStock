@@ -260,9 +260,7 @@ def initialize_spy_ticker_sec():
 
 if __name__=="__main__":
     sparkClass = sparkDelta()
-    #initialize_spy_ticker_sec()
-    #ingest_Facts_Fillings(sparkClass,'NVDA')
-    #load_spy500(sparkClass, 190, 190)
+    initialize_spy_ticker_sec()
     tickers = ['MMM', 'AOS', 'ABT', 'ABBV', 'ACN', 'ADBE', 'AMD', 'AES', 'AFL',
        'A', 'APD', 'ABNB', 'AKAM', 'ALB', 'ARE', 'ALGN', 'ALLE', 'LNT',
        'ALL', 'GOOGL', 'GOOG', 'MO', 'AMZN', 'AMCR', 'AEE', 'AAL', 'AEP',
@@ -273,11 +271,9 @@ if __name__=="__main__":
        'BRK.B', 'BBY', 'BIO', 'TECH', 'BIIB', 'BLK', 'BX', 'BA', 'BKNG',
        'BWA', 'BSX', 'BMY', 'AVGO', 'BR', 'BRO', 'BF.B', 'BLDR', 'BG',
        'BXP', 'CHRW', 'CDNS', 'CZR', 'CPT', 'CPB', 'COF', 'CAH', 'KMX']
-    #get_fact_dataframes_dict('CIK0001045810', 'NVDA')
-    #get_spy500_batch_sec(batchSize=3)
-    #load_ticket_to_delta(sparkClass, batchSize=16, tickers = tickers)
+    load_ticket_to_delta(sparkClass, batchSize=16, tickers = tickers)
     load_yahoo_stock_price(sparkClass)
     
     sparkClass.sparkStop()
-    #initialize_spy_ticker_sec()
+    
     pass
