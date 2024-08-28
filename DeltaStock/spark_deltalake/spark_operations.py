@@ -95,7 +95,7 @@ class sparkDelta():
 
         self.spark.udf.register("formatTime", formatTime)
     
-    def get_min_max_fillings_date(self, ticker):
+    def get_min_max_fillings_date_filter_ticker(self, ticker):
         #self.get_spark_dataframe('SEC_filings', True)
         path = self.blobPath + '/SEC_filings'
         query = ' '.join(
@@ -108,6 +108,20 @@ class sparkDelta():
         )
         self.registerMakeDateUDF()
         return self.spark.sql(query).toPandas()
+
+    def get_min_max_fillings_date_filter_ticker(self):
+        #self.get_spark_dataframe('SEC_filings', True)
+        path = self.blobPath + '/SEC_filings'
+        query = ' '.join(
+            (
+            f'WITH CTE AS (SELECT * FROM delta.`{path}`)',
+            'SELECT ticker, formatTime(MAX(yearMonthDay)) AS max_time, formatTime(MIN(yearMonthDay)) AS min_time FROM CTE',
+            'GROUP BY ticker'
+            )
+        )
+        self.registerMakeDateUDF()
+        return self.spark.sql(query).toPandas()
+
 
     def get_ingested_tickers(self):
         self.get_spark_dataframe('SEC_filings', True)

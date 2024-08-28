@@ -94,7 +94,7 @@ def get_rangeOfDates(yearOffset):
     
     return dateto, datefrom
 
-def get_StockPrices(ticker, interval = '1d', startSelect = None, endSelect = None):
+def get_StockPrices(ticker, startSelect = None, endSelect = None, interval = '1d'):
     if startSelect:
         end = int(datetime.strptime(endSelect,"%Y-%m-%d").timestamp())
         start = int(datetime.strptime(startSelect,"%Y-%m-%d").timestamp())
