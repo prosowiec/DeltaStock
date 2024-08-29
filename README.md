@@ -25,7 +25,7 @@ spark.spark.sql("""
                 JOIN stock_prices as p ON (cf.ticker = p.ticker and cf.yearMonthDay = p.yearMonthDay)
                 JOIN SEC_filings as fil ON (fil.ticker = cf.ticker and fil.accessionNumber = cf.accessionNumber)
                 WHERE cf.ticker = 'BXP'
-                """).show()
+                """).show(5)
 
 ```
 
@@ -34,29 +34,61 @@ This query joins the `company_facts`, `stock_prices`, and `SEC_filings` tables t
 The output of the query would look like this:
 
 ```plaintext
-+------+--------------------+------+------------------+--------------------+------------+
-|ticker|             fintype|   val|          adjclose|             fileURL|yearMonthDay|
-+------+--------------------+------+------------------+--------------------+------------+
-|   BXP|        LineOfCredit|   0.0| 85.38506317138672|https://www.sec.g...|    20210331|
-|   BXP|        LineOfCredit|   0.0| 97.44332122802734|https://www.sec.g...|    20210630|
-|   BXP|        LineOfCredit|   0.0| 92.94353485107422|https://www.sec.g...|    20210930|
-|   BXP|        LineOfCredit|1.45E8| 99.64728546142578|https://www.sec.g...|    20211231|
-|   BXP|        LineOfCredit|1.45E8| 99.64728546142578|https://www.sec.g...|    20211231|
-|   BXP|        LineOfCredit|1.45E8| 99.64728546142578|https://www.sec.g...|    20211231|
-|   BXP|        LineOfCredit|1.45E8| 99.64728546142578|https://www.sec.g...|    20211231|
-|   BXP|        LineOfCredit|1.45E8| 99.64728546142578|https://www.sec.g...|    20211231|
-|   BXP|        LineOfCredit|2.55E8|112.26079559326172|https://www.sec.g...|    20220331|
-|   BXP|        LineOfCredit|1.65E8| 78.39462280273438|https://www.sec.g...|    20220630|
-|   BXP|        LineOfCredit| 3.4E8|   66.908447265625|https://www.sec.g...|    20220930|
-|   BXP|        LineOfCredit|   0.0| 49.94557189941406|https://www.sec.g...|    20230331|
-|   BXP|        LineOfCredit|   0.0| 54.08084487915039|https://www.sec.g...|    20230630|
-|   BXP|LineOfCreditFacil...|0.0015|102.87355041503906|https://www.sec.g...|    20210615|
-|   BXP|LineOfCreditFacil...|0.0015|102.87355041503906|https://www.sec.g...|    20210615|
-|   BXP|LineOfCreditFacil...|0.0015| 99.64728546142578|https://www.sec.g...|    20211231|
-|   BXP|LineOfCreditFacil...|0.0015| 54.08084487915039|https://www.sec.g...|    20230630|
-|   BXP|LineOfCreditFacil...| 1.0E9| 89.93573760986328|https://www.sec.g...|    20141231|
-|   BXP|LineOfCreditFacil...| 1.0E9| 91.87318420410156|https://www.sec.g...|    20151231|
-|   BXP|LineOfCreditFacil...| 1.5E9|102.87355041503906|https://www.sec.g...|    20210615|
-+------+--------------------+------+------------------+--------------------+------------+
-only showing top 20 rows
++------+------------+------+-----------------+--------------------+------------+
+|ticker|     fintype|   val|         adjclose|             fileURL|yearMonthDay|
++------+------------+------+-----------------+--------------------+------------+
+|   BXP|LineOfCredit|   0.0|85.38506317138672|https://www.sec.g...|    20210331|
+|   BXP|LineOfCredit|   0.0|97.44332122802734|https://www.sec.g...|    20210630|
+|   BXP|LineOfCredit|   0.0|92.94353485107422|https://www.sec.g...|    20210930|
+|   BXP|LineOfCredit|1.45E8|99.64728546142578|https://www.sec.g...|    20211231|
+|   BXP|LineOfCredit|1.45E8|99.64728546142578|https://www.sec.g...|    20211231|
++------+------------+------+-----------------+--------------------+------------+
+only showing top 5 rows
+```
+
+
+## Data Ingestion
+
+The data ingestion process for the DeltaStock project involves fetching stock price data and financial records for a specified list of tickers. This process is executed using the `load_initialize_tickers` function, which can be found in the `pipeline.py` file. The function allows for scalable batch processing, ensuring efficient handling of large datasets.
+
+
+### Current process
+
+The data ingestion process in the DeltaStock project involves two main steps:
+
+1. **SEC Filings Data**: The financial records from the SEC EDGAR database are downloaded separately. This ensures that the necessary financial data is available before processing stock prices.
+
+2. **Stock Prices from Yahoo Finance**: Stock price data is retrieved from Yahoo Finance, but it only includes the time range that corresponds to the minimum and maximum dates present in the SEC filings table. This selective loading helps in reducing unnecessary data retrieval and focuses the analysis on relevant periods.
+
+### Batch Loading
+
+Data is loaded in batches for efficient processing. Below is an example of the batch loading process:
+
+```plaintext
+COF loaded in 1.2694916725158691 seconds
+CDNS loaded in 1.4411845207214355 seconds
+BXP loaded in 1.7666106224060059 seconds
+CAH loaded in 2.0857300758361816 seconds
+CPB loaded in 2.1732027530670166 seconds
+CHRW loaded in 2.2683205604553223 seconds
+Batch 1 loaded
+CZR loaded in 1.3973908424377441 seconds
+KMX loaded in 1.7747790813446045 seconds
+CPT loaded in 1.9990382194519043 seconds
+Batch 2 loaded
+```
+
+#### Ticker List
+Currently data only can be downoaded using spy500 companies, you can provide it in filowing form, or just use full load funtion.
+
+```python
+tickers = ['MMM', 'AOS', 'ABT', 'ABBV', 'ACN', 'ADBE', 'AMD', 'AES', 'AFL', 'A' ...]
+```
+
+#### Executing the Ingestion
+
+To initiate the data ingestion, you can execute the following function within the `pipeline.py` file:
+
+```python
+load_initialize_tickers(tickers, spy_loaded=True, batch=16)
 ```

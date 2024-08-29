@@ -30,4 +30,4 @@ if __name__=="__main__":
        'BWA', 'BSX', 'BMY', 'AVGO', 'BR', 'BRO', 'BF.B', 'BLDR', 'BG',
        'BXP', 'CHRW', 'CDNS', 'CZR', 'CPT', 'CPB', 'COF', 'CAH', 'KMX']
     
-    load_initialize_tickers(tickers,True)
+    load_initialize_tickers(tickers,spy_loaded = True, batch = 16)
