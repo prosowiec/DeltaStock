@@ -92,3 +92,19 @@ To initiate the data ingestion, you can execute the following function within th
 ```python
 load_initialize_tickers(tickers, spy_loaded=True, batch=16)
 ```
+Where - 
+- **tickers**: A list of stock tickers for which data will be ingested.
+- **spy_loaded**: A boolean flag indicating whether the S&P 500 data should be preloaded.
+- **batch**: Specifies the batch size for processing, allowing the system to handle the data ingestion in chunks, which is particularly useful for managing large volumes of data efficiently.
+
+
+## Azure Blob Storage
+
+### Credenitals
+Credentials for Azure Blob Storage, specifically the `storageAccount` and `storageKey`, should be securely included in a `.env` file. These credentials are essential for accessing and storing data within the Azure Blob Storage environment.
+
+
+### Structure
+Below is an image that demonstrates how Delta Lake saves tables in Azure Blob Storage containers. Each folder corresponds to a different table, storing data in a structured format that supports efficient querying and transactions.
+
+<a href="https://drive.google.com/uc?export=view&id=1otSiFQaYkjMMo22jtqoBbOBNMxjLOk6E"><img src="https://drive.google.com/uc?export=view&id=1otSiFQaYkjMMo22jtqoBbOBNMxjLOk6E" style="width: 650px; max-width: 100%; height: auto" title="Click to enlarge picture" />
