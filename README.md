@@ -27,7 +27,7 @@ spark.spark.sql("""
                 WHERE cf.ticker = 'BXP'
                 """).show()
 
-
+```
 
 This query joins the `company_facts`, `stock_prices`, and `SEC_filings` tables to retrieve financial information, stock prices, and filing URLs for the ticker `BXP`.
 
@@ -59,4 +59,4 @@ The output of the query would look like this:
 |   BXP|LineOfCreditFacil...| 1.5E9|102.87355041503906|https://www.sec.g...|    20210615|
 +------+--------------------+------+------------------+--------------------+------------+
 only showing top 20 rows
-
+```
