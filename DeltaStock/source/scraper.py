@@ -139,7 +139,8 @@ def cleaned_companyfacts(jsonDataframe):
     
     return mergedDF
 
-def get_companyfacts(cik):
+def get_companyfacts(cik, ticker):
+
     if "CIK" not in cik:
         cik = "CIK" + cik
     
@@ -154,15 +155,15 @@ def get_companyfacts(cik):
     
     mergedDF = cleaned_companyfacts(jsonDataframe)
     
-    mergedDF = mergedDF.apply(lambda x: addDateKey(x, 'end', 'start'), axis=1)
-
+    mergedDF = mergedDF.apply(lambda x: addDateKey(x, 'end', 'start', ticker), axis=1)
+    mergedDF['ticker'] = ticker
     desired_order = [
         'finType', 'label', 'description', 'end', 'val', 'accn', 'fy', 'fp', 
         'form', 'filed', 'frame', 'endFormat', 'start', 'startFormat', 
-        'diffDate', 'monthWindow', 'yearMonthDay']
+        'diffDate', 'monthWindow', 'yearMonthDay', 'ticker']
 
     mergedDF = mergedDF[desired_order]
-    mergedDF.drop(["fy", "endFormat", "startFormat", "diffDate"], inplace=True,axis=1)
+    mergedDF.drop(["fy", "endFormat", "startFormat", "diffDate", 'frame'], inplace=True,axis=1)
     
     return mergedDF
 
@@ -177,7 +178,7 @@ def get_CIK_by_Ticker(ticker, filename = 'ticker-SEC.csv', fill0 = True):
     return fillTo10D(str(selectedTicker.cik_str.values[0]))
 
 
-def addDateKey(row, col1, col2):
+def addDateKey(row, col1, col2, ticker = None):
     pd.options.mode.copy_on_write = True
     try:
         row['yearMonthDay'] = pd.to_datetime(row[col1]).strftime("%Y%m%d")
@@ -186,10 +187,14 @@ def addDateKey(row, col1, col2):
     except:
         row['yearMonthDay'] = ''
     
+    if ticker:
+        row['ticker'] = ticker
+    
     return row
 
 
 def get_SEC_filings(cik, ticker):
+    pd.options.mode.copy_on_write = True
     if "CIK" not in cik:
         cik = "CIK" + cik
 
@@ -209,8 +214,8 @@ def get_SEC_filings(cik, ticker):
         filings['accessionNumberCLEAN'] + "/"+ filings['primaryDocument']
     
     filings.drop('accessionNumberCLEAN', inplace = True, axis = 1)
-    filings = filings.apply(lambda x: addDateKey(x, 'reportDate', 'filingDate'), axis=1)
-    filings['ticker'] = ticker
+    filings = filings.apply(lambda x: addDateKey(x, 'reportDate', 'filingDate', ticker), axis=1)
+    #filings['ticker'] = ticker
     desired_order = [
         'accessionNumber', 'filingDate', 'reportDate', 'acceptanceDateTime',
         'act', 'form', 'fileNumber', 'filmNumber', 'items', 'size',

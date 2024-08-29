@@ -39,8 +39,8 @@ def append_SEC_filings(sparkClass : sparkDelta, ticker, cik = None):
 def append_company_facts(sparkClass : sparkDelta, ticker, cik = None):
     if not cik:
         cik = get_cik_by_ticker(sparkClass, ticker)
-    companyfacts = get_companyfacts(cik)
-    sparkClass.save_partition_DeltaTable(companyfacts, 'company_facts','accn', 'append')
+    companyfacts = get_companyfacts(cik, ticker)
+    sparkClass.save_partition_DeltaTable(companyfacts, 'company_facts','ticker', 'append')
 
 def ingest_Facts_Fillings(sparkClass : sparkDelta, ticker, cik):
     append_company_facts(sparkClass, ticker, cik)
@@ -89,11 +89,11 @@ def unpact_batch_data(wholeDataInBatch):
     facts_concat = pd.DataFrame()
 
     for dic in wholeDataInBatch:
-        fillings_concat = pd.concat([dic['SEC_filings'],fillings_concat ], axis = 0)
-        facts_concat = pd.concat([dic['company_facts'],fillings_concat ], axis = 0)
+        fillings_concat = pd.concat([dic['SEC_filings'], fillings_concat], axis = 0)
+        facts_concat = pd.concat([dic['company_facts'], facts_concat], axis = 0)
     
     sec_data = {'SEC_filings' : fillings_concat, 'company_facts':facts_concat}
-    
+
     return sec_data
 
 
@@ -102,7 +102,7 @@ def save_sec_batch_delta(sparkClass:sparkDelta,wholeDataInBatch):
     sec_data = unpact_batch_data(wholeDataInBatch)
     filings, companyfacts = sec_data['SEC_filings'], sec_data['company_facts']
     sparkClass.save_partition_DeltaTable(filings, 'SEC_filings', 'ticker','append')
-    sparkClass.save_partition_DeltaTable(companyfacts, 'company_facts','accn', 'append')
+    sparkClass.save_partition_DeltaTable(companyfacts, 'company_facts','ticker', 'append')
     
     
 def unpack_batch_yahoo(wholeDataInBatch):
@@ -124,9 +124,7 @@ def save_yahoo_price_batch_delta(sparkClass:sparkDelta,wholeDataInBatch):
 
 
 def get_spy500_batch_sec(sparkClass:sparkDelta, ticketList, batchSize = 16):
-    
     pool = multiprocessing.Pool(batchSize)
-    
     batch_control = 1
     start_step = 0
     for end_step in range(batchSize, len(ticketList), batchSize):
@@ -209,11 +207,9 @@ def load_ticket_to_delta(spark: sparkDelta, batchSize = 16, tickers = None, load
     get_spy500_batch_sec(spark, spy500, batchSize)
 
 
-def initialize_spy_ticker_sec():
-    spark = sparkDelta()
+def initialize_spy_ticker_sec(spark):
     write_spy500(spark)
     write_ticker_sec(spark)
-    spark.sparkStop()
 
 if __name__=="__main__":    
     pass
