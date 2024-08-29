@@ -1,18 +1,18 @@
-from .spark_deltalake.spark_operations import sparkDelta
-from .ingestion import initialize_spy_ticker_sec, initialize_spy_ticker_sec, load_yahoo_stock_price
+from spark_deltalake.spark_operations import sparkDelta
+from ingestion import initialize_spy_ticker_sec, load_ticket_to_delta, load_yahoo_stock_price
 
 def load_initialize_tickers(tickers, spy_loaded = False):
     sparkClass = sparkDelta()
     if not spy_loaded:
         initialize_spy_ticker_sec()
-    initialize_spy_ticker_sec(sparkClass, batchSize=16, tickers = tickers)
+    load_ticket_to_delta(sparkClass, batchSize=16, tickers = tickers)
     load_yahoo_stock_price(sparkClass)
     sparkClass.sparkStop()
     
 def load_initialize_full():
     sparkClass = sparkDelta()
     initialize_spy_ticker_sec()
-    initialize_spy_ticker_sec(sparkClass, batchSize=16, tickers = tickers)
+    load_ticket_to_delta(sparkClass, batchSize=16, tickers = tickers)
     load_yahoo_stock_price(sparkClass)
     sparkClass.sparkStop()
 

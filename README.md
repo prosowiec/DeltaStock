@@ -1,4 +1,4 @@
-# 🚀 DeltaStock 🚀
+# DeltaStock 🚀
 
 **DeltaStock** is a data processing project that utilizes Apache Spark and Delta Lake to handle and merge stock price data with financial records. By integrating with Azure Blob Storage, it provides scalable and secure storage for large datasets. The project aims to offer an integrated platform for analyzing the relationship between stock prices and company financial performance. It leverages advanced big data technologies to facilitate the addition of new data sources and enable querying with Spark SQL and PySpark, streamlining data analysis and insights generation.
 

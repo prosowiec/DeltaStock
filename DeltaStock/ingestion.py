@@ -9,7 +9,8 @@ import time
 import multiprocessing
 import numpy as np
 from pyspark.sql.functions import col 
-import traceback
+from source.async_request import get_fact_async,get_companyfacts,get_prices_async 
+
 
 def write_ticker_sec(sparkclass : sparkDelta, filename = 'ticker-sec'):
     sec_ticker = generate_CIK_TICKER()
@@ -57,53 +58,6 @@ def append_StockPrices(sparkClass : sparkDelta, ticker):
     bookmarDates = get_ticker_bookmark_values(sparkClass, ticker)
     prices = get_StockPrices(ticker, startSelect=bookmarDates['min_time'], endSelect=bookmarDates['max_time'])
     sparkClass.save_partition_DeltaTable(prices, 'stock_prices', 'ticker','append')
-
-
-def load_spy500(sparkClass:sparkDelta, start_index = -1, end_index = 99999):
-    ciks = sparkClass.get_spark_dataframe('spy500', toDataframe=True)
-    for index, row in tqdm(ciks.iterrows()):
-        if index >= start_index and index <= end_index:
-            ingest_Facts_Fillings(sparkClass, row['Symbol'], row['CIK'])
-        
-    #load stock from ingested tickers    
-    #ingestedStock = sparkClass.get_ingested_tickers()
-    #for ticker in ingestedStock:
-    #    append_StockPrices(sparkClass, ticker)
-
-
-async def async_get_companyfacts(cik):
-    return await asyncio.to_thread(get_companyfacts, cik)
-
-async def async_get_SEC_filings(cik, ticker):
-    return await asyncio.to_thread(get_SEC_filings, cik, ticker)
-
-async def async_get_StockPrices(ticker, minPeriod, maxPeriod):
-    return await asyncio.to_thread(get_StockPrices, ticker, minPeriod, maxPeriod)
-
-async def get_fact_async(cik, ticker):
-
-    compFacts_th, filings_th = await asyncio.gather(
-        async_get_companyfacts(cik), async_get_SEC_filings(cik, ticker) #, async_get_StockPrices(ticker)
-    )
-
-    resDic = {'SEC_filings':filings_th, 'company_facts':compFacts_th}
-    
-    return resDic
-
-async def get_prices_async(ticker, minPeriod, maxPeriod):
-
-    try:
-        prices = await asyncio.gather(
-            async_get_StockPrices(ticker, minPeriod, maxPeriod) 
-        )
-        prices_dic = {"stock_prices" : prices[0]}
-    except Exception as e:
-        print("Error while proccesing", ticker)
-        print(e)
-        traceback.print_exc()
-        prices_dic = {"stock_prices" : "error"}
-        
-    return prices_dic
 
 
 def get_fact_dataframes_dict(cik, ticker):
@@ -163,6 +117,9 @@ def unpack_batch_yahoo(wholeDataInBatch):
 def save_yahoo_price_batch_delta(sparkClass:sparkDelta,wholeDataInBatch):
     wholeDataInBatch = list(np.array(wholeDataInBatch).flatten())
     price_data = unpack_batch_yahoo(wholeDataInBatch)
+    if price_data.empty:
+        print('Error while loading batch - No data to be uploaded')
+        return 0
     sparkClass.save_partition_DeltaTable(price_data, 'stock_prices', 'ticker','append')
 
 
@@ -258,22 +215,5 @@ def initialize_spy_ticker_sec():
     write_ticker_sec(spark)
     spark.sparkStop()
 
-if __name__=="__main__":
-    sparkClass = sparkDelta()
-    initialize_spy_ticker_sec()
-    tickers = ['MMM', 'AOS', 'ABT', 'ABBV', 'ACN', 'ADBE', 'AMD', 'AES', 'AFL',
-       'A', 'APD', 'ABNB', 'AKAM', 'ALB', 'ARE', 'ALGN', 'ALLE', 'LNT',
-       'ALL', 'GOOGL', 'GOOG', 'MO', 'AMZN', 'AMCR', 'AEE', 'AAL', 'AEP',
-       'AXP', 'AIG', 'AMT', 'AWK', 'AMP', 'AME', 'AMGN', 'APH', 'ADI',
-       'ANSS', 'AON', 'APA', 'AAPL', 'AMAT', 'APTV', 'ACGL', 'ADM',
-       'ANET', 'AJG', 'AIZ', 'T', 'ATO', 'ADSK', 'ADP', 'AZO', 'AVB',
-       'AVY', 'AXON', 'BKR', 'BALL', 'BAC', 'BK', 'BBWI', 'BAX', 'BDX',
-       'BRK.B', 'BBY', 'BIO', 'TECH', 'BIIB', 'BLK', 'BX', 'BA', 'BKNG',
-       'BWA', 'BSX', 'BMY', 'AVGO', 'BR', 'BRO', 'BF.B', 'BLDR', 'BG',
-       'BXP', 'CHRW', 'CDNS', 'CZR', 'CPT', 'CPB', 'COF', 'CAH', 'KMX']
-    load_ticket_to_delta(sparkClass, batchSize=16, tickers = tickers)
-    load_yahoo_stock_price(sparkClass)
-    
-    sparkClass.sparkStop()
-    
+if __name__=="__main__":    
     pass
